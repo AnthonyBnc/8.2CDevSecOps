@@ -61,27 +61,24 @@ pipeline {
       }
     }
 
-    stage('SonarCloud Analysis') {
-      steps {
-        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-          sh '''
-            echo "Downloading SonarScanner..."
-            curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-macosx.zip
-            unzip -o sonar-scanner.zip
-
-            echo "Running SonarCloud analysis..."
-            ./sonar-scanner-5.0.1.3006-macosx/bin/sonar-scanner \
-              -Dsonar.host.url=${SONAR_HOST_URL} \
-              -Dsonar.organization=${SONAR_ORG} \
-              -Dsonar.projectKey=${SONAR_PROJECT} \
-              -Dsonar.sources=. \
-              -Dsonar.exclusions=node_modules/**,test/** \
-              -Dsonar.sourceEncoding=UTF-8 \
-              -Dsonar.token=$SONAR_TOKEN
-          '''
-        }
-      }
+stage('SonarCloud Analysis') {
+  steps {
+    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+      sh '''
+        echo "Running SonarCloud analysis..."
+        ./sonar-scanner-5.0.1.3006-macosx/bin/sonar-scanner \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.organization=AnthonyBnc \
+          -Dsonar.projectKey=AnthonyBnc_8.2CDevSecOps \
+          -Dsonar.sources=. \
+          -Dsonar.exclusions=node_modules/**,test/** \
+          -Dsonar.sourceEncoding=UTF-8 \
+          -Dsonar.token=$SONAR_TOKEN
+      '''
     }
+  }
+}
+
 
     stage('NPM Audit (Security Scan)') {
       steps {
