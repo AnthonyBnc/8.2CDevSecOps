@@ -6,13 +6,8 @@ pipeline {
   }
 
   environment {
-    // Point Jenkins to Homebrew Node/NPM (macOS Jenkins)
+    // Ensure Jenkins can find Node/NPM on macOS
     PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
-
-    // Sonar settings (EDIT THESE TWO)
-    SONAR_HOST_URL = "https://sonarcloud.io"
-    SONAR_ORG      = "YOUR_ORG"
-    SONAR_PROJECT  = "YOUR_PROJECT_KEY"
   }
 
   stages {
@@ -36,17 +31,15 @@ pipeline {
 
     stage('Install Dependencies') {
       steps {
-        sh '''
-          npm install
-        '''
+        sh 'npm install'
       }
     }
 
     stage('Run Tests (non-blocking)') {
       steps {
         sh '''
-          # nodejs-goof uses "snyk test" in npm test, which needs auth.
-          # Keep pipeline passing for assignment evidence.
+          # nodejs-goof runs snyk test, which requires auth.
+          # Allow pipeline to continue for assessment purposes.
           npm test || true
         '''
       }
@@ -55,35 +48,41 @@ pipeline {
     stage('Generate Coverage Report (non-blocking)') {
       steps {
         sh '''
-          # Some repos don't have "coverage" script. Keep pipeline passing.
+          # Some repos do not define a coverage script.
           npm run coverage || true
         '''
       }
     }
 
-stage('SonarCloud Analysis') {
-  steps {
-    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-      sh '''
-        echo "Running SonarCloud analysis..."
-        ./sonar-scanner-5.0.1.3006-macosx/bin/sonar-scanner \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.organization=AnthonyBnc \
-          -Dsonar.projectKey=AnthonyBnc_8.2CDevSecOps \
-          -Dsonar.sources=. \
-          -Dsonar.exclusions=node_modules/**,test/** \
-          -Dsonar.sourceEncoding=UTF-8 \
-          -Dsonar.token=$SONAR_TOKEN
-      '''
-    }
-  }
-}
+    stage('SonarCloud Analysis') {
+      steps {
+        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+          sh '''
+            echo "Running SonarCloud analysis..."
 
+            if [ ! -d "sonar-scanner-5.0.1.3006-macosx" ]; then
+              curl -sSLo sonar-scanner.zip \
+                https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-macosx.zip
+              unzip -o sonar-scanner.zip
+            fi
+
+            ./sonar-scanner-5.0.1.3006-macosx/bin/sonar-scanner \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.organization=anthonybnc \
+              -Dsonar.projectKey=AnthonyBnc_8.2CDevSecOps \
+              -Dsonar.sources=. \
+              -Dsonar.exclusions=node_modules/**,test/** \
+              -Dsonar.sourceEncoding=UTF-8 \
+              -Dsonar.token=$SONAR_TOKEN
+          '''
+        }
+      }
+    }
 
     stage('NPM Audit (Security Scan)') {
       steps {
         sh '''
-          # For assignment: show findings but don't fail the pipeline.
+          # Display vulnerabilities without failing the build
           npm audit || true
         '''
       }
@@ -92,7 +91,7 @@ stage('SonarCloud Analysis') {
 
   post {
     always {
-      echo "Pipeline finished (SUCCESS/FAILURE depends on stages)."
+      echo "Pipeline finished (results recorded)."
     }
   }
 }
