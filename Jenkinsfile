@@ -11,7 +11,7 @@ pipeline {
     SONAR_PROJECT  = "AnthonyBnc_8.2CDevSecOps"
 
     // change this to the email you want to receive notifications
-    DEV_EMAIL = "YOUR_EMAIL_HERE"
+    DEV_EMAIL = "nguyenchungbaoan@gmail.com"
   }
 
   stages {
